@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Download 3D scans from The Metropolitan Museum of Art
 # Usage: ./met-dl.sh <object_id_or_url> [format]
 # Example: ./met-dl.sh 547802
@@ -8,11 +8,37 @@
 # Formats: glb (default), fbx, usdz, all
 
 set -euo pipefail
+cd "$(dirname "$0")"
+
+DOWNLOAD_DELAY=5
 
 # Extract object ID from URL or use as-is
-INPUT="${1:?Usage: $0 <object_id_or_url> [format]}"
+INPUT="${1:-}"
 FORMAT="${2:-glb}"
-OBJECT_ID=$(echo "$INPUT" | grep -oP '\d+$' || echo "$INPUT")
+
+usage() {
+    echo "Usage: $0 <object_id_or_url> [format]" >&2
+    echo "   or: $0 <format>    # batch download all object IDs from object_ids.txt" >&2
+    echo "Formats: glb (default), fbx, usdz, all" >&2
+}
+
+if [ -z "$INPUT" ]; then
+    usage
+    exit 1
+fi
+
+case "$INPUT" in
+    glb|fbx|usdz|all|GLB|FBX|USDZ|ALL)
+        if [ "$#" -eq 1 ]; then
+            exec ./batch-dl.sh "$INPUT"
+        fi
+        ;;
+esac
+
+OBJECT_ID=$(printf '%s\n' "$INPUT" | sed -nE 's#.*\/([0-9]+)$#\1#p')
+if [ -z "$OBJECT_ID" ]; then
+    OBJECT_ID="$INPUT"
+fi
 
 URL="https://www.metmuseum.org/art/collection/search/${OBJECT_ID}"
 echo "Fetching metadata for object ${OBJECT_ID}..."
@@ -126,8 +152,17 @@ for asset in assets:
 for l in lines:
     print(l)
 " | while read -r dl_url filename; do
-    echo "Downloading ${filename}..."
-    curl -f --progress-bar -o "${filename}" "${dl_url}" || echo "  Failed to download ${filename}"
+    if [ -z "${dl_url:-}" ] || [ -z "${filename:-}" ]; then
+        continue
+    fi
+
+    ext="${filename##*.}"
+    out_dir=$(printf '%s' "$ext" | tr '[:upper:]' '[:lower:]')
+    mkdir -p "${out_dir}"
+    out_path="${out_dir}/${filename}"
+    echo "Downloading ${out_path}..."
+    curl -f --progress-bar -o "${out_path}" "${dl_url}" || echo "  Failed to download ${out_path}"
+    sleep "$DOWNLOAD_DELAY"
 done
 
 echo "Done!"

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Build a comprehensive catalog.json by merging:
 # 1. Met Public API metadata (title, artist, date, medium, dimensions, etc.)
 # 2. Vntana 3D asset data (filenames, download URLs, poly counts, etc.)

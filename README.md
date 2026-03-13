@@ -11,7 +11,7 @@ The included `object_ids.txt` has all ~129 objects with 3D scans as of March 202
 ```bash
 for offset in 0 40 80 120; do
   curl -s "https://www.metmuseum.org/art/collection/search?showOnly=has3d&offset=${offset}&perPage=40" \
-    | grep -oP '/art/collection/search/(\d+)' | grep -oP '\d+'
+    | grep -oE '/art/collection/search/[0-9]+' | grep -oE '[0-9]+'
 done | sort -un > object_ids.txt
 ```
 
@@ -28,19 +28,29 @@ Single object:
 All objects:
 ```bash
 ./batch-dl.sh glb             # download all as GLB
+./batch-dl.sh all             # download all objects in all formats
+./met-dl.sh all               # shorthand for the batch command above
 ```
 
 The batch script is resumable — it skips files that already exist.
+
+Downloads are organized by file type automatically:
+
+```text
+glb/
+fbx/
+usdz/
+```
 
 ### 3. Verify downloads
 
 ```bash
 # count files and total size
-ls *.glb | wc -l
-du -shc *.glb | tail -1
+find glb -type f -name '*.glb' | wc -l
+du -sh glb
 
 # check a specific file isn't corrupted (needs blender CLI or gltf-validator)
-npx gltf-validator somefile.glb
+npx gltf-validator glb/somefile.glb
 ```
 
 ### 4. Build metadata catalog

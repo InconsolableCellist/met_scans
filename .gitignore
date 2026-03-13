@@ -1,3 +1,6 @@
+glb/
+fbx/
+usdz/
 *.glb
 *.fbx
 *.usdz
